@@ -1,404 +1,414 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スイフラ（Switch Flash）</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* ============================================================
+           pita-color トークン（6ツール共通・将来 pita-color.css へ抽出可）
+           ============================================================ */
+        :root {
+            --bg-canvas:  #eaeaec;
+            --bg-surface: #ffffff;
+            --bg-hover:   #e2e2e6;
+            --border-color: #d8d8dc;
+            --text-primary: #1c1c1f;
+            --text-muted:   #71717a;
+            --accent-color: #4ecdc4;
+            --accent-hover: #3db8b0;
+            --on-accent:    #0a0a0a;
+            --color-adopted:  #4ecdc4;
+            --color-pending:  #f1c40f;
+            --color-rejected: #e74c3c;
+            --overlay: rgba(0, 0, 0, 0.55);
+            --radius: 8px;
+            --radius-sm: 6px;
+            --t: 0.18s ease;
         }
+
+        [data-theme="dark"] {
+            --bg-canvas:  #121212;
+            --bg-surface: #1c1c1f;
+            --bg-hover:   #262629;
+            --border-color: #333333;
+            --text-primary: #e0e0e0;
+            --text-muted:   #888888;
+            --accent-color: #4ecdc4;
+            --accent-hover: #67e8df;
+            --on-accent:    #0a0a0a;
+            --overlay: rgba(0, 0, 0, 0.72);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-canvas);
             min-height: 100vh;
-            padding: 20px;
-            color: #e1e5e9;
+            padding: 16px;
+            color: var(--text-primary);
+            transition: background-color var(--t), color var(--t);
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        :focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
         }
+
+        .icon {
+            width: 1em;
+            height: 1em;
+            display: inline-block;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; animation: none !important; }
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* ---------- ヘッダー ---------- */
+        .app-title {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1002;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 1.05rem;
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            color: var(--accent-color);
+            pointer-events: none;
+            user-select: none;
+        }
+        .app-title .icon { width: 1em; height: 1em; }
 
         .header {
+            position: relative;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
+            padding-top: 8px;
         }
 
         .header h1 {
-            color: #f8f9fa;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            color: var(--accent-color);
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
-        .header p {
-            color: #adb5bd;
-            font-size: 1.1rem;
+        .header p { color: var(--text-muted); font-size: 0.9rem; }
+
+        /* ---------- テーマトグル（共通部品） ---------- */
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 7px 13px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color var(--t), color var(--t), border-color var(--t), transform 0.1s;
         }
 
-        /* 色入力エリア */
+        .theme-toggle:hover { color: var(--text-primary); border-color: var(--accent-color); }
+        .theme-toggle:active { transform: scale(0.96); }
+
+        /* ---------- 基準色入力 ---------- */
         .color-input-section {
-            background: rgba(30, 39, 54, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: background-color var(--t), border-color var(--t);
         }
 
         .color-input-row {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .color-preview {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
             cursor: pointer;
-            transition: transform 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.15s;
         }
 
-        .color-preview:hover {
-            transform: scale(1.1);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
+        .color-preview:hover { transform: scale(1.06); }
 
         .hex-input {
-            padding: 12px 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 16px;
+            padding: 11px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-family: monospace;
+            font-size: 0.95rem;
             text-transform: uppercase;
             width: 120px;
-            background: rgba(40, 50, 68, 0.8);
-            color: #f8f9fa;
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+            transition: border-color var(--t), background-color var(--t);
         }
 
-        .hex-input:focus {
-            outline: none;
-            border-color: #64b5f6;
-            background: rgba(40, 50, 68, 1);
-        }
+        .hex-input:focus { outline: none; border-color: var(--accent-color); }
 
+        /* ---------- ボタン ---------- */
         .btn {
-            padding: 12px 20px;
+            padding: 11px 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 0.85rem;
             font-weight: 600;
-            transition: all 0.2s;
+            font-family: inherit;
+            transition: background-color var(--t), color var(--t), border-color var(--t), transform 0.1s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        .btn:active { transform: scale(0.97); }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
+        .btn-primary { background: var(--accent-color); color: var(--on-accent); }
+        .btn-primary:hover { background: var(--accent-hover); }
 
         .btn-secondary {
-            background: rgba(108, 117, 125, 0.8);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
+        .btn-secondary:hover { border-color: var(--accent-color); }
 
-        .btn-secondary:hover {
-            background: rgba(134, 142, 150, 0.9);
-            transform: translateY(-2px);
-        }
-
-        /* パターン切替 */
+        /* ---------- パターン切替 ---------- */
         .pattern-toggles {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
 
-        .pattern-toggle {
-            position: relative;
-        }
-
-        .pattern-toggle input {
-            position: absolute;
-            opacity: 0;
-        }
+        .pattern-toggle input { position: absolute; opacity: 0; }
 
         .pattern-toggle label {
             display: block;
-            padding: 10px 16px;
-            background: rgba(40, 50, 68, 0.8);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
+            padding: 9px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 99px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
+            transition: background-color var(--t), color var(--t), border-color var(--t);
+            font-size: 0.82rem;
             font-weight: 500;
-            color: #e1e5e9;
+            color: var(--text-muted);
         }
+
+        .pattern-toggle label:hover { border-color: var(--accent-color); color: var(--text-primary); }
 
         .pattern-toggle input:checked + label {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            background: var(--accent-color);
+            color: var(--on-accent);
+            border-color: var(--accent-color);
         }
 
-        /* カードリスト */
+        /* ---------- カード ---------- */
         .cards-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .card {
-            background: rgba(30, 39, 54, 0.95);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            transition: all 0.3s;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px;
+            transition: border-color var(--t), background-color var(--t), transform 0.3s, opacity 0.3s;
             opacity: 1;
             transform: scale(1) rotateY(0deg);
             display: flex;
             flex-direction: column;
         }
 
-        .card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-        }
+        .card:hover { border-color: var(--accent-color); }
 
-        .card.flip-out {
-            opacity: 0;
-            transform: scale(0.8) rotateY(90deg);
-        }
-
-        .card.flip-in {
-            animation: flipIn 0.3s ease-out;
-        }
+        .card.flip-out { opacity: 0; transform: scale(0.8) rotateY(90deg); }
+        .card.flip-in { animation: flipIn 0.3s ease-out; }
 
         @keyframes flipIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8) rotateY(-90deg);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) rotateY(0deg);
-            }
+            from { opacity: 0; transform: scale(0.8) rotateY(-90deg); }
+            to { opacity: 1; transform: scale(1) rotateY(0deg); }
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #f8f9fa;
-        }
+        .card-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
 
         .card-close {
             background: none;
             border: none;
-            font-size: 16px;
+            color: var(--text-muted);
             cursor: pointer;
             padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
-            opacity: 0.7;
-        }
-
-        .card-close:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.1);
-        }
-
-        .color-swatches {
+            border-radius: var(--radius-sm);
             display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
+            align-items: center;
+            transition: background-color var(--t), color var(--t);
+            font-size: 1rem;
         }
+
+        .card-close:hover { background: var(--bg-hover); color: var(--color-rejected); }
+
+        .color-swatches { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 
         .color-swatch {
             flex: 1;
-            height: 50px;
-            border-radius: 8px;
+            min-width: 40px;
+            height: 48px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            transition: transform 0.15s, box-shadow 0.15s;
             position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            padding: 0;
         }
 
-        .color-swatch:hover {
-            transform: translateY(-3px);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-        }
-
-        .color-swatch:focus {
-            outline: 2px solid #64b5f6;
-            outline-offset: 2px;
-        }
+        .color-swatch:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
 
         .hex-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
+            gap: 6px;
+            font-family: monospace;
+            font-size: 0.72rem;
         }
 
         .hex-item {
-            background: rgba(40, 50, 68, 0.8);
+            background: var(--bg-canvas);
             padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s;
-            color: #e1e5e9;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color var(--t), border-color var(--t);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
 
-        .hex-item:hover {
-            background: rgba(60, 70, 88, 0.9);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
+        .hex-item:hover { border-color: var(--accent-color); }
 
-        .card-meta {
-            margin-top: 10px;
-            font-size: 11px;
-            color: #adb5bd;
-        }
+        .card-meta { margin-top: 10px; font-size: 0.7rem; color: var(--text-muted); }
 
-        /* 操作バー */
+        /* ---------- 操作バー ---------- */
         .action-bar {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
 
-        /* お気に入りセクション */
-        .favorites-section {
-            background: rgba(30, 39, 54, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            margin-bottom: 25px;
+        /* ---------- お気に入り ---------- */
+        .favorites-section, .history-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 20px;
+            transition: background-color var(--t), border-color var(--t);
         }
 
         .favorites-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .favorites-title {
-            font-size: 18px;
+            font-size: 1rem;
             font-weight: 600;
-            color: #f8f9fa;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .favorites-count {
-            background: rgba(102, 126, 234, 0.3);
-            color: #64b5f6;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            background: var(--bg-hover);
+            color: var(--text-muted);
+            padding: 2px 9px;
+            border-radius: 99px;
+            font-size: 0.72rem;
             font-weight: 500;
         }
 
-        .favorites-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .favorites-actions { display: flex; gap: 8px; }
 
         .favorites-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
             gap: 12px;
-            margin-bottom: 15px;
-            min-height: 60px;
+            margin-bottom: 8px;
+            min-height: 56px;
         }
 
         .favorite-slot {
             aspect-ratio: 1;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            transition: transform 0.15s, border-color var(--t);
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .favorite-slot.empty {
             border-style: dashed;
-            background: rgba(40, 50, 68, 0.5);
-            color: #adb5bd;
-            font-size: 24px;
+            background: var(--bg-canvas);
+            color: var(--text-muted);
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .favorite-slot.empty:hover {
-            border-color: rgba(102, 126, 234, 0.5);
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .favorite-slot:not(.empty):hover {
-            transform: translateY(-3px);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-        }
+        .favorite-slot.empty:hover { border-color: var(--accent-color); }
+        .favorite-slot:not(.empty):hover { transform: translateY(-3px); }
 
         .favorite-remove {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -7px;
+            right: -7px;
             width: 20px;
             height: 20px;
-            background: #dc3545;
-            color: white;
+            background: var(--color-rejected);
+            color: #fff;
             border: none;
             border-radius: 50%;
             font-size: 12px;
@@ -406,462 +416,296 @@
             display: none;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
-        .favorite-slot:hover .favorite-remove {
-            display: flex;
-        }
+        .favorite-slot:hover .favorite-remove { display: flex; }
 
         .favorite-hex {
             position: absolute;
-            bottom: -20px;
+            bottom: -18px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 10px;
-            color: #adb5bd;
-            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+            font-family: monospace;
             white-space: nowrap;
         }
 
-        .favorites-empty {
-            text-align: center;
-            color: #adb5bd;
-            font-style: italic;
-            padding: 30px;
-        }
+        /* ---------- 履歴 ---------- */
+        .history-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; }
 
-        /* お気に入りボタン */
-        .favorite-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 24px;
-            height: 24px;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            border-radius: 50%;
-            color: #ffd700;
-            font-size: 12px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .color-swatch:hover .favorite-btn {
-            display: flex;
-        }
-
-        .favorite-btn:hover {
-            background: rgba(0, 0, 0, 0.9);
-            transform: scale(1.1);
-        }
-
-        .history-section {
-            background: rgba(30, 39, 54, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        .history-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #f8f9fa;
-            margin-bottom: 15px;
-        }
-
-        .history-list {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
+        .history-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 
         .history-item {
             flex-shrink: 0;
-            width: 120px;
-            background: rgba(40, 50, 68, 0.8);
-            border-radius: 8px;
+            width: 112px;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
             padding: 10px;
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: border-color var(--t), transform 0.15s;
         }
 
-        .history-item:hover {
-            border-color: #64b5f6;
-            transform: translateY(-2px);
-        }
+        .history-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
 
-        .history-preview {
-            display: flex;
-            gap: 2px;
-            margin-bottom: 8px;
-        }
+        .history-preview { display: flex; gap: 2px; margin-bottom: 8px; }
+        .history-color { flex: 1; height: 20px; border-radius: 2px; }
 
-        .history-color {
-            flex: 1;
-            height: 20px;
-            border-radius: 2px;
-        }
+        .history-info { font-size: 0.68rem; color: var(--text-muted); text-align: center; font-family: monospace; }
 
-        .history-info {
-            font-size: 11px;
-            color: #adb5bd;
-            text-align: center;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-
-        /* トースト */
+        /* ---------- トースト ---------- */
         .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-color);
+            color: var(--on-accent);
+            padding: 12px 22px;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 2000;
+            transition: bottom 0.3s ease-out;
+            white-space: nowrap;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
+        .toast.show { bottom: 24px; }
 
-        /* カラーピッカーモーダル */
+        /* ---------- カラーピッカーモーダル ---------- */
         .color-picker-modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
+            inset: 0;
+            background: var(--overlay);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 2000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s ease;
+            transition: opacity var(--t), visibility var(--t);
+            padding: 16px;
         }
 
-        .color-picker-modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
+        .color-picker-modal.show { opacity: 1; visibility: visible; }
 
         .color-picker-content {
-            background: rgba(25, 32, 45, 0.98);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 24px;
             max-width: 400px;
-            width: 90%;
+            width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         .picker-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
-        .picker-title {
-            color: #f8f9fa;
-            font-size: 20px;
-            font-weight: 600;
-        }
+        .picker-title { color: var(--text-primary); font-size: 1.1rem; font-weight: 600; }
 
         .picker-close {
             background: none;
             border: none;
-            color: #adb5bd;
-            font-size: 24px;
+            color: var(--text-muted);
             cursor: pointer;
             padding: 5px;
-            border-radius: 50%;
-            transition: all 0.2s;
+            border-radius: var(--radius-sm);
+            display: flex;
+            transition: background-color var(--t), color var(--t);
         }
 
-        .picker-close:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #f8f9fa;
-        }
+        .picker-close:hover { background: var(--bg-hover); color: var(--text-primary); }
 
         .picker-tabs {
             display: flex;
             gap: 5px;
-            margin-bottom: 20px;
-            background: rgba(40, 50, 68, 0.8);
-            border-radius: 10px;
+            margin-bottom: 18px;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
             padding: 5px;
         }
 
         .picker-tab {
             flex: 1;
-            padding: 10px 15px;
+            padding: 9px 12px;
             background: none;
             border: none;
-            color: #adb5bd;
-            font-size: 14px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
             font-weight: 500;
-            border-radius: 8px;
+            font-family: inherit;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background-color var(--t), color var(--t);
         }
 
-        .picker-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+        .picker-tab.active { background: var(--accent-color); color: var(--on-accent); }
 
-        .picker-view {
-            display: none;
-        }
+        .picker-view { display: none; }
+        .picker-view.active { display: block; }
 
-        .picker-view.active {
-            display: block;
-        }
-
-        /* スペクトラムビュー */
+        /* スペクトラム（機能グラデ：保持） */
         .spectrum-picker {
             width: 100%;
-            height: 200px;
-            border-radius: 10px;
+            height: 180px;
+            border-radius: var(--radius-sm);
             position: relative;
             cursor: crosshair;
-            margin-bottom: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 14px;
+            border: 1px solid var(--border-color);
         }
 
         .spectrum-cursor {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid white;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #fff;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
         }
 
+        /* 色相スライダー（機能グラデ：保持） */
         .hue-slider {
             width: 100%;
-            height: 20px;
-            border-radius: 10px;
-            background: linear-gradient(to right, 
-                #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, 
+            height: 18px;
+            border-radius: 99px;
+            background: linear-gradient(to right,
+                #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
                 #0000ff 67%, #ff00ff 83%, #ff0000 100%);
             position: relative;
             cursor: pointer;
-            margin-bottom: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 14px;
+            border: 1px solid var(--border-color);
         }
 
         .hue-cursor {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid white;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #fff;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             top: 50%;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
         }
 
-        /* グリッドビュー */
         .grid-picker {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 14px;
         }
 
         .grid-color {
             aspect-ratio: 1;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            transition: transform 0.15s;
         }
 
-        .grid-color:hover {
-            transform: scale(1.1);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
+        .grid-color:hover { transform: scale(1.12); }
 
-        /* スライダービュー */
-        .slider-view {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .slider-label {
-            color: #f8f9fa;
-            font-size: 14px;
-            font-weight: 500;
-            min-width: 50px;
-        }
+        .slider-view { display: flex; flex-direction: column; gap: 14px; }
+        .slider-group { display: flex; align-items: center; gap: 14px; }
+        .slider-label { color: var(--text-primary); font-size: 0.85rem; font-weight: 500; min-width: 30px; }
 
         .color-slider {
             flex: 1;
-            height: 20px;
-            border-radius: 10px;
+            height: 18px;
+            border-radius: 99px;
             position: relative;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--border-color);
         }
 
         .slider-cursor {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid white;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #fff;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             top: 50%;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
         }
 
-        .slider-value {
-            color: #adb5bd;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-            min-width: 40px;
-            text-align: right;
-        }
+        .slider-value { color: var(--text-muted); font-family: monospace; font-size: 0.75rem; min-width: 34px; text-align: right; }
 
-        /* プレビューエリア */
         .picker-preview {
             display: flex;
-            gap: 15px;
+            gap: 14px;
             align-items: center;
-            padding: 15px;
-            background: rgba(40, 50, 68, 0.8);
-            border-radius: 10px;
-            margin-bottom: 20px;
+            padding: 14px;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 18px;
         }
 
-        .preview-color {
-            width: 60px;
-            height: 60px;
-            border-radius: 10px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
+        .preview-color { width: 56px; height: 56px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+        .preview-info { flex: 1; }
+        .preview-hex { color: var(--text-primary); font-family: monospace; font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+        .preview-values { color: var(--text-muted); font-size: 0.75rem; font-family: monospace; }
 
-        .preview-info {
-            flex: 1;
-        }
-
-        .preview-hex {
-            color: #f8f9fa;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .preview-values {
-            color: #adb5bd;
-            font-size: 12px;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-
-        /* アクションボタン */
-        .picker-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .picker-actions { display: flex; gap: 10px; }
 
         .picker-btn {
             flex: 1;
-            padding: 12px 20px;
+            padding: 12px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
             font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background-color var(--t), transform 0.1s;
         }
 
-        .picker-btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+        .picker-btn:active { transform: scale(0.98); }
+        .picker-btn-primary { background: var(--accent-color); color: var(--on-accent); }
+        .picker-btn-primary:hover { background: var(--accent-hover); }
+        .picker-btn-secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .picker-btn-secondary:hover { border-color: var(--accent-color); }
 
-        .picker-btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            transform: translateY(-2px);
-        }
-
-        .picker-btn-secondary {
-            background: rgba(108, 117, 125, 0.8);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .picker-btn-secondary:hover {
-            background: rgba(134, 142, 150, 0.9);
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-canvas); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
         @media (max-width: 768px) {
-            .color-input-row {
-                flex-direction: column;
-            }
-            
-            .pattern-toggles {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .cards-container {
-                grid-template-columns: 1fr;
-            }
+            .color-input-row { flex-direction: column; }
+            .cards-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+    <div class="app-title"><span id="appTitleIcon"></span>SWIfla</div>
     <div class="container">
         <header class="header">
-            <h1>🎨 スイフラ</h1>
-            <p>Switch Flash - カラーパレット生成ツール</p>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon"></span><span id="themeLabel">ライト</span>
+            </button>
+            <p>基準色から配色パターンを一覧生成</p>
         </header>
 
         <section class="color-input-section">
             <div class="color-input-row">
                 <div class="color-preview" id="colorPreview"></div>
                 <input type="text" class="hex-input" id="hexInput" placeholder="#3366FF" pattern="^#?[0-9A-Fa-f]{6}$">
-                <button class="btn btn-primary" id="randomBtn">🎲 ランダム</button>
-                <button class="btn btn-secondary" id="copyBaseBtn">📋 コピー</button>
+                <button class="btn btn-primary" id="randomBtn"></button>
+                <button class="btn btn-secondary" id="copyBaseBtn"></button>
             </div>
         </section>
 
@@ -892,16 +736,15 @@
             </div>
         </section>
 
-        <section class="cards-container" id="cardsContainer">
-        </section>
+        <section class="cards-container" id="cardsContainer"></section>
 
         <div class="color-picker-modal" id="colorPickerModal">
             <div class="color-picker-content">
                 <div class="picker-header">
                     <h3 class="picker-title">カラー選択</h3>
-                    <button class="picker-close" id="pickerClose">&times;</button>
+                    <button class="picker-close" id="pickerClose"></button>
                 </div>
-                
+
                 <div class="picker-tabs">
                     <button class="picker-tab active" data-view="spectrum">スペクトラム</button>
                     <button class="picker-tab" data-view="slider">スライダー</button>
@@ -921,31 +764,24 @@
                     <div class="slider-view">
                         <div class="slider-group">
                             <span class="slider-label">赤</span>
-                            <div class="color-slider" id="redSlider">
-                                <div class="slider-cursor" id="redCursor"></div>
-                            </div>
+                            <div class="color-slider" id="redSlider"><div class="slider-cursor" id="redCursor"></div></div>
                             <span class="slider-value" id="redValue">255</span>
                         </div>
                         <div class="slider-group">
                             <span class="slider-label">緑</span>
-                            <div class="color-slider" id="greenSlider">
-                                <div class="slider-cursor" id="greenCursor"></div>
-                            </div>
+                            <div class="color-slider" id="greenSlider"><div class="slider-cursor" id="greenCursor"></div></div>
                             <span class="slider-value" id="greenValue">255</span>
                         </div>
                         <div class="slider-group">
                             <span class="slider-label">青</span>
-                            <div class="color-slider" id="blueSlider">
-                                <div class="slider-cursor" id="blueCursor"></div>
-                            </div>
+                            <div class="color-slider" id="blueSlider"><div class="slider-cursor" id="blueCursor"></div></div>
                             <span class="slider-value" id="blueValue">255</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="picker-view" id="gridView">
-                    <div class="grid-picker" id="gridPicker">
-                        </div>
+                    <div class="grid-picker" id="gridPicker"></div>
                 </div>
 
                 <div class="picker-preview">
@@ -964,82 +800,86 @@
         </div>
 
         <section class="action-bar">
-            <button class="btn btn-primary" id="refreshBtn">🔄 全再計算</button>
-            <button class="btn btn-primary" id="saveBtn">💾 保存</button>
-            <button class="btn btn-primary" id="exportBtn">📤 PNG出力</button>
+            <button class="btn btn-primary" id="refreshBtn"></button>
+            <button class="btn btn-primary" id="saveBtn"></button>
+            <button class="btn btn-primary" id="exportBtn"></button>
         </section>
 
         <section class="favorites-section">
             <div class="favorites-header">
                 <h3 class="favorites-title">
-                    ⭐ お気に入り色
+                    お気に入り色
                     <span class="favorites-count" id="favoritesCount">0/10</span>
                 </h3>
                 <div class="favorites-actions">
-                    <button class="btn btn-secondary" id="clearFavoritesBtn">🗑️ クリア</button>
-                    <button class="btn btn-primary" id="exportFavoritesBtn">📤 PNG出力</button>
+                    <button class="btn btn-secondary" id="clearFavoritesBtn"></button>
+                    <button class="btn btn-primary" id="exportFavoritesBtn"></button>
                 </div>
             </div>
-            <div class="favorites-grid" id="favoritesGrid">
-                </div>
+            <div class="favorites-grid" id="favoritesGrid"></div>
         </section>
 
         <section class="history-section">
             <h3 class="history-title">履歴</h3>
-            <div class="history-list" id="historyList">
-            </div>
+            <div class="history-list" id="historyList"></div>
         </section>
     </div>
 
     <script>
-        // 状態管理
-        let state = {
-            baseColor: '#3366FF',
-            patternsEnabled: {
-                monochrome: true,
-                analogous: true,
-                complementary: true,
-                splitComp: true,
-                triad: true,
-                tetrad: true
-            },
-            cards: [],
-            history: [],
-            favorites: [], // お気に入り色リスト（最大10色）
-            ui: {
-                flipping: false,
-                toast: null
-            }
+        // ============================================================
+        // アイコン（SVG内蔵・CDN非依存）
+        // ============================================================
+        const svgIcon = (p) => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+        const ICONS = {
+            sun: svgIcon('<circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'),
+            moon: svgIcon('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'),
+            shuffle: svgIcon('<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>'),
+            copy: svgIcon('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+            refresh: svgIcon('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'),
+            save: svgIcon('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>'),
+            download: svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
+            trash: svgIcon('<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
+            x: svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
+            logo: svgIcon('<circle cx="13.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="17.5" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8.5" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="6.5" cy="12.5" r=".9" fill="currentColor" stroke="none"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>')
         };
 
-        // 色変換ユーティリティ
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('pita-theme', theme);
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (icon) icon.innerHTML = theme === 'dark' ? ICONS.moon : ICONS.sun;
+            if (label) label.textContent = theme === 'dark' ? 'ダーク' : 'ライト';
+        }
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            applyTheme(cur === 'dark' ? 'light' : 'dark');
+        }
+        (function initTheme() { applyTheme(localStorage.getItem('pita-theme') || 'light'); })();
+
+        // ============================================================
+        let state = {
+            baseColor: '#3366FF',
+            patternsEnabled: { monochrome: true, analogous: true, complementary: true, splitComp: true, triad: true, tetrad: true },
+            cards: [],
+            history: [],
+            favorites: [],
+            ui: { flipping: false, toast: null }
+        };
+
         function hexToRgb(hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
         }
-
         function rgbToHex(r, g, b) {
-            return "#" + [r, g, b].map(x => {
-                const hex = Math.round(x).toString(16);
-                return hex.length === 1 ? "0" + hex : hex;
-            }).join("");
+            return "#" + [r, g, b].map(x => { const h = Math.round(x).toString(16); return h.length === 1 ? "0" + h : h; }).join("");
         }
-
         function rgbToHsl(r, g, b) {
-            r /= 255;
-            g /= 255;
-            b /= 255;
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
             let h, s, l = (max + min) / 2;
-
-            if (max === min) {
-                h = s = 0;
-            } else {
+            if (max === min) { h = s = 0; }
+            else {
                 const d = max - min;
                 s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
                 switch (max) {
@@ -1051,7 +891,6 @@
             }
             return { h: h * 360, s, l };
         }
-
         function hslToRgb(h, s, l) {
             h /= 360;
             const hue2rgb = (p, q, t) => {
@@ -1062,288 +901,155 @@
                 if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
                 return p;
             };
-
-            if (s === 0) {
-                return { r: l * 255, g: l * 255, b: l * 255 };
-            }
-
+            if (s === 0) return { r: l * 255, g: l * 255, b: l * 255 };
             const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
             const p = 2 * l - q;
-            const r = hue2rgb(p, q, h + 1/3);
-            const g = hue2rgb(p, q, h);
-            const b = hue2rgb(p, q, h - 1/3);
-
-            return { r: r * 255, g: g * 255, b: b * 255 };
+            return { r: hue2rgb(p, q, h + 1/3) * 255, g: hue2rgb(p, q, h) * 255, b: hue2rgb(p, q, h - 1/3) * 255 };
         }
+        function shiftHue(h, deg) { return (h + deg + 360) % 360; }
+        function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+        function adj(v, amt) { return clamp01(v + amt); }
 
-        function shiftHue(h, deg) {
-            return (h + deg + 360) % 360;
-        }
-
-        function clamp01(x) {
-            return Math.max(0, Math.min(1, x));
-        }
-
-        function adj(v, amt) {
-            return clamp01(v + amt);
-        }
-
-        // カラーパターン生成
         function generateMonochrome(h, s, l) {
             const colors = [rgbToHex(...Object.values(hslToRgb(h, s, l)))];
-            
-            // モノクロームは5色のグラデーション的バリエーション
             const variations = [
                 { s: adj(s, -0.1), l: adj(l, 0.1) },
                 { s: adj(s, 0.05), l: adj(l, -0.15) },
                 { s: adj(s, -0.05), l: adj(l, 0.2) },
                 { s: adj(s, 0.1), l: adj(l, -0.1) }
             ];
-
-            variations.forEach(v => {
-                colors.push(rgbToHex(...Object.values(hslToRgb(h, v.s, v.l))));
-            });
-
+            variations.forEach(v => colors.push(rgbToHex(...Object.values(hslToRgb(h, v.s, v.l)))));
             return colors;
         }
-
         function generateAnalogous(h, s, l) {
-            // 類似色は5色（基準色 + ±15°, ±30°）
-            const hues = [h - 30, h - 15, h, h + 15, h + 30];
-            return hues.map(hue => 
-                rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l)))
-            );
+            return [h - 30, h - 15, h, h + 15, h + 30].map(hue => rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l))));
         }
-
         function generateComplementary(h, s, l) {
-            // 補色は本来の2色のみ
-            const hues = [h, h + 180];
-            return hues.map(hue => 
-                rgbToHex(...Object.values(hslToRgb(hue, s, l)))
-            );
+            return [h, h + 180].map(hue => rgbToHex(...Object.values(hslToRgb(hue, s, l))));
         }
-
         function generateSplitComp(h, s, l) {
-            // 分割補色は本来の3色のみ
-            const hues = [h, h + 150, h + 210];
-            return hues.map(hue => 
-                rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l)))
-            );
+            return [h, h + 150, h + 210].map(hue => rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l))));
         }
-
         function generateTriad(h, s, l) {
-            // 三色配色は本来の3色のみ
-            const hues = [h, h + 120, h + 240];
-            return hues.map(hue => 
-                rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l)))
-            );
+            return [h, h + 120, h + 240].map(hue => rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l))));
         }
-
         function generateTetrad(h, s, l) {
-            // 四色配色は本来の4色のみ
-            const hues = [h, h + 90, h + 180, h + 270];
-            return hues.map(hue => 
-                rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l)))
-            );
+            return [h, h + 90, h + 180, h + 270].map(hue => rgbToHex(...Object.values(hslToRgb(shiftHue(hue, 0), s, l))));
         }
 
-        // カラーピッカー関連
-        let colorPicker = {
-            currentColor: '#FF0000',
-            currentView: 'spectrum',
-            isOpen: false,
-            hsl: { h: 0, s: 1, l: 0.5 },
-            rgb: { r: 255, g: 0, b: 0 },
-            callback: null
-        };
+        // ---------- カラーピッカー ----------
+        let colorPicker = { currentColor: '#FF0000', currentView: 'spectrum', isOpen: false, hsl: { h: 0, s: 1, l: 0.5 }, rgb: { r: 255, g: 0, b: 0 }, callback: null };
 
         function openColorPicker(initialColor, callback) {
             colorPicker.currentColor = initialColor;
             colorPicker.callback = callback;
             colorPicker.isOpen = true;
-            
-            // 初期色をHSL/RGBに変換
             const rgb = hexToRgb(initialColor);
             colorPicker.rgb = rgb;
             colorPicker.hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-            
             updatePickerUI();
             document.getElementById('colorPickerModal').classList.add('show');
             document.body.style.overflow = 'hidden';
         }
-
         function closeColorPicker() {
             colorPicker.isOpen = false;
             document.getElementById('colorPickerModal').classList.remove('show');
             document.body.style.overflow = '';
         }
-
-        function updatePickerUI() {
-            updatePreview();
-            updateSpectrumView();
-            updateSliderView();
-        }
-
+        function updatePickerUI() { updatePreview(); updateSpectrumView(); updateSliderView(); }
         function updatePreview() {
             const hex = rgbToHex(colorPicker.rgb.r, colorPicker.rgb.g, colorPicker.rgb.b);
             colorPicker.currentColor = hex;
-            
             document.getElementById('previewColor').style.backgroundColor = hex;
             document.getElementById('previewHex').textContent = hex;
-            document.getElementById('previewValues').textContent = 
-                `RGB(${Math.round(colorPicker.rgb.r)}, ${Math.round(colorPicker.rgb.g)}, ${Math.round(colorPicker.rgb.b)})`;
+            document.getElementById('previewValues').textContent = `RGB(${Math.round(colorPicker.rgb.r)}, ${Math.round(colorPicker.rgb.g)}, ${Math.round(colorPicker.rgb.b)})`;
         }
-
         function updateSpectrumView() {
-            // スペクトラムピッカーの背景を更新
             const spectrum = document.getElementById('spectrumPicker');
-            const hue = colorPicker.hsl.h;
-            const hueColor = hslToRgb(hue, 1, 0.5);
+            const hueColor = hslToRgb(colorPicker.hsl.h, 1, 0.5);
             const hueHex = rgbToHex(hueColor.r, hueColor.g, hueColor.b);
-            
-            spectrum.style.background = `
-                linear-gradient(to top, #000 0%, transparent 100%),
-                linear-gradient(to right, #fff 0%, transparent 100%),
-                ${hueHex}
-            `;
-            
-            // カーソル位置を更新
-            const spectrumCursor = document.getElementById('spectrumCursor');
-            const x = colorPicker.hsl.s * 100;
-            const y = (1 - colorPicker.hsl.l) * 100;
-            spectrumCursor.style.left = `${Math.max(0, Math.min(100, x))}%`;
-            spectrumCursor.style.top = `${Math.max(0, Math.min(100, y))}%`;
-            
-            // 色相スライダーのカーソル位置
-            const hueCursor = document.getElementById('hueCursor');
-            hueCursor.style.left = `${(colorPicker.hsl.h / 360) * 100}%`;
+            spectrum.style.background = `linear-gradient(to top, #000 0%, transparent 100%), linear-gradient(to right, #fff 0%, transparent 100%), ${hueHex}`;
+            const sc = document.getElementById('spectrumCursor');
+            sc.style.left = `${Math.max(0, Math.min(100, colorPicker.hsl.s * 100))}%`;
+            sc.style.top = `${Math.max(0, Math.min(100, (1 - colorPicker.hsl.l) * 100))}%`;
+            document.getElementById('hueCursor').style.left = `${(colorPicker.hsl.h / 360) * 100}%`;
         }
-
         function updateSliderView() {
-            // RGBスライダーの背景と位置を更新
-            const r = Math.round(colorPicker.rgb.r);
-            const g = Math.round(colorPicker.rgb.g);
-            const b = Math.round(colorPicker.rgb.b);
-            
-            const redSlider = document.getElementById('redSlider');
-            const greenSlider = document.getElementById('greenSlider');
-            const blueSlider = document.getElementById('blueSlider');
-            
-            redSlider.style.background = `linear-gradient(to right, 
-                rgb(0, ${g}, ${b}), 
-                rgb(255, ${g}, ${b}))`;
-            greenSlider.style.background = `linear-gradient(to right, 
-                rgb(${r}, 0, ${b}), 
-                rgb(${r}, 255, ${b}))`;
-            blueSlider.style.background = `linear-gradient(to right, 
-                rgb(${r}, ${g}, 0), 
-                rgb(${r}, ${g}, 255))`;
-            
-            // カーソル位置
+            const r = Math.round(colorPicker.rgb.r), g = Math.round(colorPicker.rgb.g), b = Math.round(colorPicker.rgb.b);
+            document.getElementById('redSlider').style.background = `linear-gradient(to right, rgb(0, ${g}, ${b}), rgb(255, ${g}, ${b}))`;
+            document.getElementById('greenSlider').style.background = `linear-gradient(to right, rgb(${r}, 0, ${b}), rgb(${r}, 255, ${b}))`;
+            document.getElementById('blueSlider').style.background = `linear-gradient(to right, rgb(${r}, ${g}, 0), rgb(${r}, ${g}, 255))`;
             document.getElementById('redCursor').style.left = `${(r / 255) * 100}%`;
             document.getElementById('greenCursor').style.left = `${(g / 255) * 100}%`;
             document.getElementById('blueCursor').style.left = `${(b / 255) * 100}%`;
-            
-            // 値表示
             document.getElementById('redValue').textContent = r;
             document.getElementById('greenValue').textContent = g;
             document.getElementById('blueValue').textContent = b;
         }
-
         function generateColorGrid() {
             const grid = document.getElementById('gridPicker');
             grid.innerHTML = '';
-            
-            // 基本カラーパレット
             const colors = [
-                // グレー系
-                '#000000', '#333333', '#666666', '#999999', '#cccccc', '#ffffff',
-                // 赤系
-                '#ff0000', '#ff6666', '#ff9999', '#ffcccc', '#660000', '#990000',
-                // オレンジ系
-                '#ff6600', '#ff9933', '#ffcc66', '#ffe699', '#cc3300', '#cc6600',
-                // 黄色系
-                '#ffff00', '#ffff66', '#ffff99', '#ffffcc', '#cccc00', '#999900',
-                // 緑系
-                '#00ff00', '#66ff66', '#99ff99', '#ccffcc', '#006600', '#009900',
-                // 青緑系
-                '#00ffff', '#66ffff', '#99ffff', '#ccffff', '#006666', '#009999',
-                // 青系
-                '#0000ff', '#6666ff', '#9999ff', '#ccccff', '#000066', '#000099',
-                // 紫系
-                '#ff00ff', '#ff66ff', '#ff99ff', '#ffccff', '#660066', '#990099',
-                // 茶系
-                '#996633', '#cc9966', '#ffcc99', '#ffe6cc', '#663300', '#cc6600',
-                // ピンク系
-                '#ff69b4', '#ffb6c1', '#ffc0cb', '#ffe4e1', '#c71585', '#ff1493',
-                // 追加の鮮やかな色
-                '#ff4500', '#32cd32', '#1e90ff', '#ffd700', '#8a2be2', '#dc143c'
+                '#000000','#333333','#666666','#999999','#cccccc','#ffffff',
+                '#ff0000','#ff6666','#ff9999','#ffcccc','#660000','#990000',
+                '#ff6600','#ff9933','#ffcc66','#ffe699','#cc3300','#cc6600',
+                '#ffff00','#ffff66','#ffff99','#ffffcc','#cccc00','#999900',
+                '#00ff00','#66ff66','#99ff99','#ccffcc','#006600','#009900',
+                '#00ffff','#66ffff','#99ffff','#ccffff','#006666','#009999',
+                '#0000ff','#6666ff','#9999ff','#ccccff','#000066','#000099',
+                '#ff00ff','#ff66ff','#ff99ff','#ffccff','#660066','#990099',
+                '#996633','#cc9966','#ffcc99','#ffe6cc','#663300','#cc6600',
+                '#ff69b4','#ffb6c1','#ffc0cb','#ffe4e1','#c71585','#ff1493',
+                '#ff4500','#32cd32','#1e90ff','#ffd700','#8a2be2','#dc143c'
             ];
-            
             colors.forEach(color => {
-                const colorEl = document.createElement('div');
-                colorEl.className = 'grid-color';
-                colorEl.style.backgroundColor = color;
-                colorEl.addEventListener('click', () => {
+                const el = document.createElement('div');
+                el.className = 'grid-color';
+                el.style.backgroundColor = color;
+                el.addEventListener('click', () => {
                     const rgb = hexToRgb(color);
                     colorPicker.rgb = rgb;
                     colorPicker.hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
                     updatePickerUI();
                 });
-                grid.appendChild(colorEl);
+                grid.appendChild(el);
             });
         }
 
-        // カードの再構築
         function rebuildCards() {
             const rgb = hexToRgb(state.baseColor);
             if (!rgb) return;
-            
             const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
             const newCards = [];
-
             const generators = {
-                monochrome: { fn: generateMonochrome, rule: 'HSL-based monochrome variations (5 colors)' },
-                analogous: { fn: generateAnalogous, rule: 'HSL-based analogous ±15°/±30° (5 colors)' },
-                complementary: { fn: generateComplementary, rule: 'HSL-based complementary 180° (2 colors)' },
-                splitComp: { fn: generateSplitComp, rule: 'HSL-based split-complementary 150°/210° (3 colors)' },
-                triad: { fn: generateTriad, rule: 'HSL-based triadic 120° (3 colors)' },
-                tetrad: { fn: generateTetrad, rule: 'HSL-based tetradic 90° (4 colors)' }
+                monochrome: { fn: generateMonochrome, rule: 'HSL モノクローム 5色' },
+                analogous: { fn: generateAnalogous, rule: 'HSL 類似色 ±15°/±30° 5色' },
+                complementary: { fn: generateComplementary, rule: 'HSL 補色 180° 2色' },
+                splitComp: { fn: generateSplitComp, rule: 'HSL 分割補色 150°/210° 3色' },
+                triad: { fn: generateTriad, rule: 'HSL 三色配色 120° 3色' },
+                tetrad: { fn: generateTetrad, rule: 'HSL 四色配色 90° 4色' }
             };
-
             Object.keys(state.patternsEnabled).forEach(pattern => {
                 if (state.patternsEnabled[pattern] && generators[pattern]) {
-                    const colors = generators[pattern].fn(h, s, l);
                     newCards.push({
                         id: `${pattern}-${Date.now()}`,
                         pattern,
-                        colors: colors,
-                        meta: {
-                            rule: generators[pattern].rule,
-                            generatedAt: Date.now()
-                        }
+                        colors: generators[pattern].fn(h, s, l),
+                        meta: { rule: generators[pattern].rule, generatedAt: Date.now() }
                     });
                 }
             });
-
             state.cards = newCards;
         }
 
-        // アニメーション
         function playFlip() {
             if (state.ui.flipping) return;
-            
             state.ui.flipping = true;
-            const cards = document.querySelectorAll('.card');
-            
-            // フリップアウト
-            cards.forEach(card => card.classList.add('flip-out'));
-            
+            document.querySelectorAll('.card').forEach(card => card.classList.add('flip-out'));
             setTimeout(() => {
                 renderCards();
                 setTimeout(() => {
-                    const newCards = document.querySelectorAll('.card');
-                    newCards.forEach(card => {
+                    document.querySelectorAll('.card').forEach(card => {
                         card.classList.remove('flip-out');
                         card.classList.add('flip-in');
                     });
@@ -1352,143 +1058,97 @@
             }, 150);
         }
 
-        // レンダリング
         function renderCards() {
             const container = document.getElementById('cardsContainer');
             container.innerHTML = '';
-
             state.cards.forEach(card => {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card';
-                cardEl.innerHTML = `
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.innerHTML = `
                     <div class="card-header">
                         <h3 class="card-title">${getPatternName(card.pattern)}</h3>
-                        <button class="card-close" data-pattern="${card.pattern}" title="このカードを非表示">❌</button>
+                        <button class="card-close" data-pattern="${card.pattern}" title="このカードを非表示" aria-label="このカードを非表示">${ICONS.x}</button>
                     </div>
                     <div class="color-swatches">
-                        ${card.colors.map((color, i) => `
-                            <button class="color-swatch" 
-                                style="background-color: ${color}" 
-                                data-color="${color}"
-                                aria-label="クリック：コピー+お気に入りに追加"
-                                tabindex="0">
-                            </button>
+                        ${card.colors.map(color => `
+                            <button class="color-swatch" style="background-color: ${color}" data-color="${color}" aria-label="クリックでコピー＋お気に入り追加" tabindex="0"></button>
                         `).join('')}
                     </div>
                     <div class="hex-list">
-                        ${card.colors.map(color => `
-                            <span class="hex-item" data-color="${color}">${color}</span>
-                        `).join('')}
+                        ${card.colors.map(color => `<span class="hex-item" data-color="${color}">${color}</span>`).join('')}
                     </div>
                     <div class="card-meta">${card.meta.rule}</div>
                 `;
-                container.appendChild(cardEl);
+                container.appendChild(el);
             });
         }
 
         function getPatternName(pattern) {
-            const names = {
-                monochrome: 'モノクローム',
-                analogous: '類似色',
-                complementary: '補色',
-                splitComp: '分割補色',
-                triad: '三色配色',
-                tetrad: '四色配色'
-            };
+            const names = { monochrome: 'モノクローム', analogous: '類似色', complementary: '補色', splitComp: '分割補色', triad: '三色配色', tetrad: '四色配色' };
             return names[pattern] || pattern;
         }
 
         function renderHistory() {
             const container = document.getElementById('historyList');
             container.innerHTML = '';
-
             state.history.forEach(item => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'history-item';
-                itemEl.innerHTML = `
+                const el = document.createElement('div');
+                el.className = 'history-item';
+                el.innerHTML = `
                     <div class="history-preview">
-                        ${item.cards[0]?.colors.slice(0, 5).map(color => `
-                            <div class="history-color" style="background-color: ${color}"></div>
-                        `).join('') || ''}
+                        ${item.cards[0]?.colors.slice(0, 5).map(color => `<div class="history-color" style="background-color: ${color}"></div>`).join('') || ''}
                     </div>
-                    <div class="history-info">
-                        ${item.baseColor}<br>
-                        ${new Date(item.savedAt).toLocaleDateString()}
-                    </div>
+                    <div class="history-info">${item.baseColor}<br>${new Date(item.savedAt).toLocaleDateString()}</div>
                 `;
-                itemEl.addEventListener('click', () => restoreFromHistory(item.id));
-                container.appendChild(itemEl);
+                el.addEventListener('click', () => restoreFromHistory(item.id));
+                container.appendChild(el);
             });
         }
 
         function renderFavorites() {
             const grid = document.getElementById('favoritesGrid');
             grid.innerHTML = '';
-            
             const maxFavorites = 10;
-            
             state.favorites.forEach(color => {
                 const slot = document.createElement('div');
                 slot.className = 'favorite-slot';
                 slot.style.backgroundColor = color;
                 slot.dataset.color = color;
-                slot.addEventListener('click', () => {
-                    copyToClipboard(color).then(() => {
-                        showToast(`${color} をコピーしました`);
-                    });
-                });
-                
-                // 削除ボタン
+                slot.addEventListener('click', () => { copyToClipboard(color).then(() => showToast(`${color} をコピーしました`)); });
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'favorite-remove';
                 removeBtn.dataset.color = color;
                 removeBtn.textContent = '×';
                 slot.appendChild(removeBtn);
-                
-                // HEX値表示
                 const hexSpan = document.createElement('span');
                 hexSpan.className = 'favorite-hex';
                 hexSpan.textContent = color;
                 slot.appendChild(hexSpan);
-                
                 grid.appendChild(slot);
             });
-
-            // 空のスロットを追加
             for (let i = state.favorites.length; i < maxFavorites; i++) {
-                const emptySlot = document.createElement('div');
-                emptySlot.className = 'favorite-slot empty';
-                emptySlot.innerHTML = '+';
-                grid.appendChild(emptySlot);
+                const empty = document.createElement('div');
+                empty.className = 'favorite-slot empty';
+                empty.textContent = '+';
+                grid.appendChild(empty);
             }
-
             document.getElementById('favoritesCount').textContent = `${state.favorites.length}/${maxFavorites}`;
         }
 
-        // お気に入り機能
         function addToFavorites(color, showMessage = false) {
-            if (state.favorites.includes(color)) {
-                if (showMessage) showToast('既にお気に入りに追加済みです');
-                return;
-            }
-            if (state.favorites.length >= 10) {
-                if (showMessage) showToast('お気に入りは最大10色までです');
-                return;
-            }
-            
+            if (state.favorites.includes(color)) { if (showMessage) showToast('既にお気に入りに追加済みです'); return; }
+            if (state.favorites.length >= 10) { if (showMessage) showToast('お気に入りは最大10色までです'); return; }
             state.favorites.push(color);
             localStorage.setItem('suifla-favorites-v1', JSON.stringify(state.favorites));
             renderFavorites();
-            if (showMessage) showToast(`⭐ ${color} をお気に入りに追加しました`);
+            if (showMessage) showToast(`${color} をお気に入りに追加しました`);
         }
-
         function removeFromFavorites(color) {
             state.favorites = state.favorites.filter(c => c !== color);
             localStorage.setItem('suifla-favorites-v1', JSON.stringify(state.favorites));
             renderFavorites();
             showToast(`${color} をお気に入りから削除しました`);
         }
-
         function clearFavorites() {
             if (confirm('お気に入りリストをすべてクリアしますか？')) {
                 state.favorites = [];
@@ -1497,75 +1157,48 @@
                 showToast('お気に入りをクリアしました');
             }
         }
-
         function loadFavorites() {
-            try {
-                const saved = localStorage.getItem('suifla-favorites-v1');
-                if (saved) {
-                    state.favorites = JSON.parse(saved);
-                }
-            } catch (err) {
-                console.error('Failed to load favorites:', err);
-            }
+            try { const saved = localStorage.getItem('suifla-favorites-v1'); if (saved) state.favorites = JSON.parse(saved); }
+            catch (err) { console.error(err); }
             renderFavorites();
         }
 
-        // イベントハンドリング
         function showToast(message) {
-            if (state.ui.toast) {
-                document.body.removeChild(state.ui.toast);
-            }
-            
+            if (state.ui.toast) { document.body.removeChild(state.ui.toast); }
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.textContent = message;
             state.ui.toast = toast;
             document.body.appendChild(toast);
-            
+            requestAnimationFrame(() => toast.classList.add('show'));
             setTimeout(() => {
                 if (state.ui.toast === toast) {
-                    document.body.removeChild(toast);
-                    state.ui.toast = null;
+                    toast.classList.remove('show');
+                    setTimeout(() => { if (toast.parentNode) document.body.removeChild(toast); if (state.ui.toast === toast) state.ui.toast = null; }, 300);
                 }
             }, 2000);
         }
 
         async function copyToClipboard(text) {
-            try {
-                await navigator.clipboard.writeText(text);
-                return true;
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                showToast('コピーに失敗しました');
-                return false;
-            }
+            try { await navigator.clipboard.writeText(text); return true; }
+            catch (err) { console.error(err); showToast('コピーに失敗しました'); return false; }
         }
-
-        // 色クリック時の統合処理
         async function handleColorClick(color) {
-            const copySuccess = await copyToClipboard(color);
-            
-            if (copySuccess) {
-                addToFavorites(color, true);
-            }
+            const ok = await copyToClipboard(color);
+            if (ok) addToFavorites(color, true);
         }
 
         function onBaseColorChange(hex) {
             if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
-            
             state.baseColor = hex.toUpperCase();
             document.getElementById('colorPreview').style.backgroundColor = hex;
             document.getElementById('hexInput').value = hex;
-            
             rebuildCards();
             playFlip();
         }
-
         function generateRandomColor() {
-            const hex = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-            onBaseColorChange(hex);
+            onBaseColorChange('#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'));
         }
-
         function togglePattern(pattern) {
             state.patternsEnabled[pattern] = !state.patternsEnabled[pattern];
             rebuildCards();
@@ -1573,47 +1206,27 @@
         }
 
         function saveToHistory() {
-            const historyItem = {
+            state.history.unshift({
                 id: Date.now().toString(),
                 baseColor: state.baseColor,
                 selectedPatterns: Object.keys(state.patternsEnabled).filter(p => state.patternsEnabled[p]),
                 cards: JSON.parse(JSON.stringify(state.cards)),
                 savedAt: Date.now()
-            };
-            
-            state.history.unshift(historyItem);
-            if (state.history.length > 24) {
-                state.history = state.history.slice(0, 24);
-            }
-            
+            });
+            if (state.history.length > 24) state.history = state.history.slice(0, 24);
             localStorage.setItem('suifla-history-v1', JSON.stringify(state.history));
             renderHistory();
             showToast('履歴に保存しました');
         }
-
         function restoreFromHistory(id) {
             const item = state.history.find(h => h.id === id);
             if (!item) return;
-            
             state.baseColor = item.baseColor;
-            
-            // パターンを初期化してから設定
-            Object.keys(state.patternsEnabled).forEach(p => {
-                state.patternsEnabled[p] = false;
-            });
-            item.selectedPatterns.forEach(p => {
-                if (state.patternsEnabled.hasOwnProperty(p)) {
-                    state.patternsEnabled[p] = true;
-                }
-            });
-            
-            // UI更新
+            Object.keys(state.patternsEnabled).forEach(p => state.patternsEnabled[p] = false);
+            item.selectedPatterns.forEach(p => { if (state.patternsEnabled.hasOwnProperty(p)) state.patternsEnabled[p] = true; });
             document.getElementById('colorPreview').style.backgroundColor = item.baseColor;
             document.getElementById('hexInput').value = item.baseColor;
-            document.querySelectorAll('.pattern-toggle input').forEach(input => {
-                input.checked = state.patternsEnabled[input.id] || false;
-            });
-            
+            document.querySelectorAll('.pattern-toggle input').forEach(input => { input.checked = state.patternsEnabled[input.id] || false; });
             rebuildCards();
             playFlip();
             showToast('履歴から復元しました');
@@ -1622,495 +1235,195 @@
         function exportToPng() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
-            const cardWidth = 300;
-            const cardHeight = 200;
-            const margin = 20;
-            const cols = Math.min(3, state.cards.length);
+            const cardWidth = 300, cardHeight = 200, margin = 20;
+            const cols = Math.min(3, Math.max(1, state.cards.length));
             const rows = Math.ceil(state.cards.length / cols);
-            
             canvas.width = cols * cardWidth + (cols + 1) * margin;
-            canvas.height = rows * cardHeight + (rows + 1) * margin;
-            
-            // 背景
-            ctx.fillStyle = '#1a1a2e';
+            canvas.height = rows * cardHeight + (rows + 1) * margin + 40;
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            ctx.fillStyle = dark ? '#121212' : '#eaeaec';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+            ctx.fillStyle = dark ? '#e0e0e0' : '#1c1c1f';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('スイフラ - カラーパレット', margin, 28);
+            ctx.fillStyle = '#71717a';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(`Base: ${state.baseColor}  /  ${new Date().toLocaleString('ja-JP')}`, margin, 46);
+            const offY = 40;
             state.cards.forEach((card, index) => {
-                const col = index % cols;
-                const row = Math.floor(index / cols);
+                const col = index % cols, row = Math.floor(index / cols);
                 const x = margin + col * (cardWidth + margin);
-                const y = margin + row * (cardHeight + margin);
-                
-                // カード背景
-                ctx.fillStyle = '#2b2b40';
+                const y = offY + margin + row * (cardHeight + margin);
+                ctx.fillStyle = dark ? '#1c1c1f' : '#ffffff';
                 ctx.fillRect(x, y, cardWidth, cardHeight);
-                
-                // タイトル
-                ctx.fillStyle = '#f8f9fa';
-                ctx.font = 'bold 18px sans-serif';
-                ctx.fillText(getPatternName(card.pattern), x + 15, y + 30);
-                
-                // 基準色表示
-                ctx.fillStyle = '#adb5bd';
-                ctx.font = '12px monospace';
-                ctx.fillText(`Base: ${state.baseColor}`, x + 15, y + 50);
-                
-                // カラースウォッチ
-                const swatchWidth = (cardWidth - 30 - (card.colors.length - 1) * 8) / card.colors.length;
-                const swatchHeight = 50;
+                ctx.strokeStyle = dark ? '#333' : '#d8d8dc';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, cardWidth, cardHeight);
+                ctx.fillStyle = dark ? '#e0e0e0' : '#1c1c1f';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText(getPatternName(card.pattern), x + 15, y + 28);
+                const sw = (cardWidth - 30 - (card.colors.length - 1) * 8) / card.colors.length;
                 card.colors.forEach((color, i) => {
+                    const sx = x + 15 + i * (sw + 8);
                     ctx.fillStyle = color;
-                    const swatchX = x + 15 + i * (swatchWidth + 8);
-                    ctx.fillRect(swatchX, y + 65, swatchWidth, swatchHeight);
-                    
-                    // スウォッチ枠
-                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(swatchX, y + 65, swatchWidth, swatchHeight);
+                    ctx.fillRect(sx, y + 45, sw, 50);
+                    ctx.strokeStyle = dark ? '#333' : '#d8d8dc';
+                    ctx.strokeRect(sx, y + 45, sw, 50);
                 });
-                
-                // HEX値
-                ctx.fillStyle = '#e1e5e9';
+                ctx.fillStyle = dark ? '#e0e0e0' : '#1c1c1f';
                 ctx.font = '11px monospace';
                 card.colors.forEach((color, i) => {
-                    const swatchX = x + 15 + i * (swatchWidth + 8);
-                    const textX = swatchX + (swatchWidth - ctx.measureText(color).width) / 2;
-                    ctx.fillText(color, textX, y + 130);
+                    const sx = x + 15 + i * (sw + 8);
+                    ctx.fillText(color, sx + (sw - ctx.measureText(color).width) / 2, y + 115);
                 });
-                
-                // ルール説明
-                ctx.fillStyle = '#adb5bd';
+                ctx.fillStyle = '#71717a';
                 ctx.font = '10px sans-serif';
-                ctx.fillText(card.meta.rule, x + 15, y + 160);
-                
-                // 生成日時
-                ctx.fillStyle = '#7f8c8d';
-                ctx.font = '9px sans-serif';
-                const dateText = new Date(card.meta.generatedAt).toLocaleString('ja-JP');
-                ctx.fillText(dateText, x + 15, y + 175);
+                ctx.fillText(card.meta.rule, x + 15, y + 140);
             });
-            
-            // ヘッダー情報
-            if (state.cards.length > 0) {
-                ctx.fillStyle = '#f8f9fa';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillText('🎨 スイフラ - カラーパレット', 20, 30);
-                
-                ctx.fillStyle = '#adb5bd';
-                ctx.font = '14px sans-serif';
-                ctx.fillText(`Generated: ${new Date().toLocaleString('ja-JP')}`, 20, 50);
-            }
-            
-            // ダウンロード
             const link = document.createElement('a');
-            link.download = `suifla-palette-${state.baseColor.replace('#', '')}-${Date.now()}.png`;
+            link.download = `suifla-palette-${state.baseColor.replace('#','')}-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
-            
             showToast('PNG画像をダウンロードしました');
         }
 
         function exportFavoritesPng() {
-            if (state.favorites.length === 0) {
-                showToast('お気に入りがありません');
-                return;
-            }
-
+            if (state.favorites.length === 0) { showToast('お気に入りがありません'); return; }
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
-            const slotSize = 100;
-            const margin = 20;
-            const cols = 5;
+            const slotSize = 100, margin = 20, cols = 5;
             const rows = Math.ceil(state.favorites.length / cols);
-            
             canvas.width = cols * slotSize + (cols + 1) * margin;
-            canvas.height = rows * slotSize + (rows + 1) * margin;
-            
-            ctx.fillStyle = '#1a1a2e';
+            canvas.height = rows * (slotSize + 24) + margin * 2 + 20;
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            ctx.fillStyle = dark ? '#121212' : '#eaeaec';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = '#f8f9fa';
-            ctx.font = 'bold 24px sans-serif';
-            ctx.fillText('⭐ スイフラ - お気に入り色', margin, margin + 20);
-            
-            const startY = margin * 2 + 20;
-
+            ctx.fillStyle = dark ? '#e0e0e0' : '#1c1c1f';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('スイフラ - お気に入り色', margin, margin + 16);
+            const startY = margin + 36;
             state.favorites.forEach((color, index) => {
-                const col = index % cols;
-                const row = Math.floor(index / cols);
+                const col = index % cols, row = Math.floor(index / cols);
                 const x = margin + col * (slotSize + margin);
-                const y = startY + row * (slotSize + margin);
-                
+                const y = startY + row * (slotSize + 24 + margin);
                 ctx.fillStyle = color;
                 ctx.fillRect(x, y, slotSize, slotSize);
-                
-                ctx.strokeStyle = '#e1e5e9';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = dark ? '#333' : '#d8d8dc';
+                ctx.lineWidth = 1;
                 ctx.strokeRect(x, y, slotSize, slotSize);
-                
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = dark ? '#e0e0e0' : '#1c1c1f';
                 ctx.font = '12px monospace';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(color, x + slotSize / 2, y + slotSize + 15);
+                ctx.fillText(color, x + slotSize / 2, y + slotSize + 16);
+                ctx.textAlign = 'left';
             });
-
             const link = document.createElement('a');
             link.download = `suifla-favorites-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
-            
             showToast('お気に入り画像をダウンロードしました');
         }
 
         function loadHistory() {
-            try {
-                const saved = localStorage.getItem('suifla-history-v1');
-                if (saved) {
-                    state.history = JSON.parse(saved);
-                    renderHistory();
-                }
-            } catch (err) {
-                console.error('Failed to load history:', err);
-            }
+            try { const saved = localStorage.getItem('suifla-history-v1'); if (saved) { state.history = JSON.parse(saved); renderHistory(); } }
+            catch (err) { console.error(err); }
         }
 
-        // 初期化
         function init() {
-            // 初期色設定
+            const _appTitleIcon = document.getElementById('appTitleIcon');
+            if (_appTitleIcon) _appTitleIcon.innerHTML = ICONS.logo;
+            // ボタンのラベル（SVGアイコン＋テキスト）
+            document.getElementById('randomBtn').innerHTML = ICONS.shuffle + ' ランダム';
+            document.getElementById('copyBaseBtn').innerHTML = ICONS.copy + ' コピー';
+            document.getElementById('refreshBtn').innerHTML = ICONS.refresh + ' 全再計算';
+            document.getElementById('saveBtn').innerHTML = ICONS.save + ' 保存';
+            document.getElementById('exportBtn').innerHTML = ICONS.download + ' PNG出力';
+            document.getElementById('clearFavoritesBtn').innerHTML = ICONS.trash + ' クリア';
+            document.getElementById('exportFavoritesBtn').innerHTML = ICONS.download + ' PNG出力';
+            document.getElementById('pickerClose').innerHTML = ICONS.x;
+
             const initialColor = state.baseColor;
             document.getElementById('colorPreview').style.backgroundColor = initialColor;
             document.getElementById('hexInput').value = initialColor;
-            
-            // イベントリスナー
+
             const hexInput = document.getElementById('hexInput');
             hexInput.addEventListener('input', (e) => {
-                let value = e.target.value.trim();
-                if (!value.startsWith('#')) value = '#' + value;
-                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
-                    onBaseColorChange(value);
-                }
+                let v = e.target.value.trim();
+                if (!v.startsWith('#')) v = '#' + v;
+                if (/^#[0-9A-Fa-f]{6}$/.test(v)) onBaseColorChange(v);
             });
-            
-            // Enter キーでも更新
             hexInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    let value = e.target.value.trim();
-                    if (!value.startsWith('#')) value = '#' + value;
-                    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
-                        onBaseColorChange(value);
-                    }
+                    let v = e.target.value.trim();
+                    if (!v.startsWith('#')) v = '#' + v;
+                    if (/^#[0-9A-Fa-f]{6}$/.test(v)) onBaseColorChange(v);
                 }
             });
-            
-            const colorPreview = document.getElementById('colorPreview');
-            colorPreview.addEventListener('click', () => {
-                openColorPicker(state.baseColor, (newColor) => {
-                    onBaseColorChange(newColor);
-                });
+
+            document.getElementById('colorPreview').addEventListener('click', () => {
+                openColorPicker(state.baseColor, (c) => onBaseColorChange(c));
             });
-            
             document.getElementById('randomBtn').addEventListener('click', generateRandomColor);
-            
             document.getElementById('copyBaseBtn').addEventListener('click', () => {
-                copyToClipboard(state.baseColor).then(success => {
-                    if (success) {
-                        showToast(`${state.baseColor} をコピーしました`);
-                    }
-                });
+                copyToClipboard(state.baseColor).then(ok => { if (ok) showToast(`${state.baseColor} をコピーしました`); });
             });
-            
-            // パターントグル - 初期状態も設定
+
             document.querySelectorAll('.pattern-toggle input').forEach(input => {
-                // 初期チェック状態を設定
                 input.checked = state.patternsEnabled[input.id] || false;
-                
-                input.addEventListener('change', (e) => {
-                    togglePattern(e.target.id);
-                });
+                input.addEventListener('change', (e) => togglePattern(e.target.id));
             });
-            
-            // 操作ボタン
-            document.getElementById('refreshBtn').addEventListener('click', () => {
-                rebuildCards();
-                playFlip();
-                showToast('パレットを再計算しました');
-            });
-            
+
+            document.getElementById('refreshBtn').addEventListener('click', () => { rebuildCards(); playFlip(); showToast('パレットを再計算しました'); });
             document.getElementById('saveBtn').addEventListener('click', saveToHistory);
             document.getElementById('exportBtn').addEventListener('click', exportToPng);
-            
-            // カラーピッカーイベント
+
             document.getElementById('pickerClose').addEventListener('click', closeColorPicker);
             document.getElementById('pickerCancel').addEventListener('click', closeColorPicker);
             document.getElementById('pickerOk').addEventListener('click', () => {
-                if (colorPicker.callback) {
-                    colorPicker.callback(colorPicker.currentColor);
-                }
+                if (colorPicker.callback) colorPicker.callback(colorPicker.currentColor);
                 closeColorPicker();
             });
-            
-            // ピッカータブ切替
+
             document.querySelectorAll('.picker-tab').forEach(tab => {
                 tab.addEventListener('click', (e) => {
                     const view = e.target.dataset.view;
                     colorPicker.currentView = view;
-                    
-                    // タブアクティブ状態更新
                     document.querySelectorAll('.picker-tab').forEach(t => t.classList.remove('active'));
                     e.target.classList.add('active');
-                    
-                    // ビュー切替
                     document.querySelectorAll('.picker-view').forEach(v => v.classList.remove('active'));
                     document.getElementById(view + 'View').classList.add('active');
                 });
             });
-            
-            // スペクトラムピッカーイベント
-            const setupSpectrumPicker = () => {
-                const spectrumPicker = document.getElementById('spectrumPicker');
-                
-                const updateSpectrum = (e) => {
-                    const rect = spectrumPicker.getBoundingClientRect();
-                    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-                    
-                    colorPicker.hsl.s = x;
-                    colorPicker.hsl.l = Math.max(0, Math.min(1, 1 - y));
-                    
-                    const rgb = hslToRgb(colorPicker.hsl.h, colorPicker.hsl.s, colorPicker.hsl.l);
-                    colorPicker.rgb = rgb;
-                    updatePickerUI();
-                };
-                
-                spectrumPicker.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    updateSpectrum(e);
-                    
-                    const handleMouseMove = (e) => {
-                        e.preventDefault();
-                        updateSpectrum(e);
-                    };
-                    
-                    const handleMouseUp = () => {
-                        document.removeEventListener('mousemove', handleMouseMove);
-                        document.removeEventListener('mouseup', handleMouseUp);
-                    };
-                    
-                    document.addEventListener('mousemove', handleMouseMove);
-                    document.addEventListener('mouseup', handleMouseUp);
-                });
-                
-                // タッチイベント対応
-                spectrumPicker.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    updateSpectrum(touch);
-                    
-                    const handleTouchMove = (e) => {
-                        e.preventDefault();
-                        const touch = e.touches[0];
-                        updateSpectrum(touch);
-                    };
-                    
-                    const handleTouchEnd = () => {
-                        document.removeEventListener('touchmove', handleTouchMove);
-                        document.removeEventListener('touchend', handleTouchEnd);
-                    };
-                    
-                    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    document.addEventListener('touchend', handleTouchEnd);
-                });
-            };
-            
-            // 色相スライダーイベント
-            const setupHueSlider = () => {
-                const hueSlider = document.getElementById('hueSlider');
-                
-                const updateHue = (e) => {
-                    const rect = hueSlider.getBoundingClientRect();
-                    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    colorPicker.hsl.h = x * 360;
-                    
-                    const rgb = hslToRgb(colorPicker.hsl.h, colorPicker.hsl.s, colorPicker.hsl.l);
-                    colorPicker.rgb = rgb;
-                    updatePickerUI();
-                };
-                
-                hueSlider.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    updateHue(e);
-                    
-                    const handleMouseMove = (e) => {
-                        e.preventDefault();
-                        updateHue(e);
-                    };
-                    
-                    const handleMouseUp = () => {
-                        document.removeEventListener('mousemove', handleMouseMove);
-                        document.removeEventListener('mouseup', handleMouseUp);
-                    };
-                    
-                    document.addEventListener('mousemove', handleMouseMove);
-                    document.addEventListener('mouseup', handleMouseUp);
-                });
-                
-                hueSlider.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    updateHue(touch);
-                    
-                    const handleTouchMove = (e) => {
-                        e.preventDefault();
-                        const touch = e.touches[0];
-                        updateHue(touch);
-                    };
-                    
-                    const handleTouchEnd = () => {
-                        document.removeEventListener('touchmove', handleTouchMove);
-                        document.removeEventListener('touchend', handleTouchEnd);
-                    };
-                    
-                    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    document.addEventListener('touchend', handleTouchEnd);
-                });
-            };
-            
-            // RGBスライダーイベント
-            const setupRGBSliders = () => {
-                ['red', 'green', 'blue'].forEach((channel, index) => {
-                    const slider = document.getElementById(channel + 'Slider');
-                    const channelNames = ['r', 'g', 'b'];
-                    
-                    const updateChannel = (e) => {
-                        const rect = slider.getBoundingClientRect();
-                        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                        colorPicker.rgb[channelNames[index]] = x * 255;
-                        
-                        const hsl = rgbToHsl(colorPicker.rgb.r, colorPicker.rgb.g, colorPicker.rgb.b);
-                        colorPicker.hsl = hsl;
-                        updatePickerUI();
-                    };
-                    
-                    slider.addEventListener('mousedown', (e) => {
-                        e.preventDefault();
-                        updateChannel(e);
-                        
-                        const handleMouseMove = (e) => {
-                            e.preventDefault();
-                            updateChannel(e);
-                        };
-                        
-                        const handleMouseUp = () => {
-                            document.removeEventListener('mousemove', handleMouseMove);
-                            document.removeEventListener('mouseup', handleMouseUp);
-                        };
-                        
-                        document.addEventListener('mousemove', handleMouseMove);
-                        document.addEventListener('mouseup', handleMouseUp);
-                    });
-                    
-                    slider.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        const touch = e.touches[0];
-                        updateChannel(touch);
-                        
-                        const handleTouchMove = (e) => {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            updateChannel(touch);
-                        };
-                        
-                        const handleTouchEnd = () => {
-                            document.removeEventListener('touchmove', handleTouchMove);
-                            document.removeEventListener('touchend', handleTouchEnd);
-                        };
-                        
-                        document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                        document.addEventListener('touchend', handleTouchEnd);
-                    });
-                });
-            };
-            
+
             setupSpectrumPicker();
             setupHueSlider();
             setupRGBSliders();
-            
-            // モーダル外クリックで閉じる
+
             document.getElementById('colorPickerModal').addEventListener('click', (e) => {
-                if (e.target === e.currentTarget) {
-                    closeColorPicker();
-                }
+                if (e.target === e.currentTarget) closeColorPicker();
             });
-            
-            // カードイベント（動的）
+
             document.addEventListener('click', (e) => {
-                // 色スウォッチのクリック - コピー + お気に入り追加
-                if (e.target.classList.contains('color-swatch')) {
-                    const color = e.target.dataset.color;
-                    if (color) {
-                        handleColorClick(color);
-                    }
-                    return;
-                }
-                
-                // HEX値のクリック - コピーのみ
+                const swatch = e.target.closest('.color-swatch');
+                if (swatch) { const c = swatch.dataset.color; if (c) handleColorClick(c); return; }
                 if (e.target.classList.contains('hex-item')) {
-                    const color = e.target.dataset.color;
-                    if (color) {
-                        copyToClipboard(color).then(success => {
-                            if (success) {
-                                showToast(`${color} をコピーしました`);
-                            }
-                        });
-                    }
+                    const c = e.target.dataset.color;
+                    if (c) copyToClipboard(c).then(ok => { if (ok) showToast(`${c} をコピーしました`); });
                     return;
                 }
-                
-                // お気に入り削除ボタン
                 if (e.target.classList.contains('favorite-remove')) {
                     e.stopPropagation();
-                    const color = e.target.dataset.color;
-                    if (color) {
-                        removeFromFavorites(color);
-                    }
+                    const c = e.target.dataset.color;
+                    if (c) removeFromFavorites(c);
                     return;
                 }
-                
-                // カード閉じるボタン
-                if (e.target.classList.contains('card-close')) {
-                    const pattern = e.target.dataset.pattern;
-                    if (pattern) {
-                        togglePattern(pattern);
-                    }
-                    return;
-                }
+                const closeBtn = e.target.closest('.card-close');
+                if (closeBtn) { const p = closeBtn.dataset.pattern; if (p) togglePattern(p); return; }
             });
-            
-            // お気に入り関連のイベント
-            const clearFavoritesBtn = document.getElementById('clearFavoritesBtn');
-            const exportFavoritesBtn = document.getElementById('exportFavoritesBtn');
-            
-            if (clearFavoritesBtn) {
-                clearFavoritesBtn.addEventListener('click', clearFavorites);
-            }
-            if (exportFavoritesBtn) {
-                exportFavoritesBtn.addEventListener('click', exportFavoritesPng);
-            }
-            
-            // キーボードサポート
-            document.addEventListener('keydown', (e) => {
-                if (e.target.classList.contains('color-swatch') && e.key === 'Enter') {
-                    const color = e.target.dataset.color;
-                    if (color) {
-                        copyToClipboard(color);
-                    }
-                }
-            });
-            
-            // 初期レンダリング
+
+            document.getElementById('clearFavoritesBtn').addEventListener('click', clearFavorites);
+            document.getElementById('exportFavoritesBtn').addEventListener('click', exportFavoritesPng);
+
             loadHistory();
             loadFavorites();
             generateColorGrid();
@@ -2118,9 +1431,81 @@
             renderCards();
         }
 
-        // DOM読み込み完了後に初期化
+        function setupSpectrumPicker() {
+            const sp = document.getElementById('spectrumPicker');
+            const update = (e) => {
+                const rect = sp.getBoundingClientRect();
+                const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+                colorPicker.hsl.s = x;
+                colorPicker.hsl.l = Math.max(0, Math.min(1, 1 - y));
+                colorPicker.rgb = hslToRgb(colorPicker.hsl.h, colorPicker.hsl.s, colorPicker.hsl.l);
+                updatePickerUI();
+            };
+            sp.addEventListener('mousedown', (e) => {
+                e.preventDefault(); update(e);
+                const mv = (ev) => { ev.preventDefault(); update(ev); };
+                const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+                document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+            });
+            sp.addEventListener('touchstart', (e) => {
+                e.preventDefault(); update(e.touches[0]);
+                const mv = (ev) => { ev.preventDefault(); update(ev.touches[0]); };
+                const end = () => { document.removeEventListener('touchmove', mv); document.removeEventListener('touchend', end); };
+                document.addEventListener('touchmove', mv, { passive: false }); document.addEventListener('touchend', end);
+            });
+        }
+
+        function setupHueSlider() {
+            const hs = document.getElementById('hueSlider');
+            const update = (e) => {
+                const rect = hs.getBoundingClientRect();
+                const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                colorPicker.hsl.h = x * 360;
+                colorPicker.rgb = hslToRgb(colorPicker.hsl.h, colorPicker.hsl.s, colorPicker.hsl.l);
+                updatePickerUI();
+            };
+            hs.addEventListener('mousedown', (e) => {
+                e.preventDefault(); update(e);
+                const mv = (ev) => { ev.preventDefault(); update(ev); };
+                const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+                document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+            });
+            hs.addEventListener('touchstart', (e) => {
+                e.preventDefault(); update(e.touches[0]);
+                const mv = (ev) => { ev.preventDefault(); update(ev.touches[0]); };
+                const end = () => { document.removeEventListener('touchmove', mv); document.removeEventListener('touchend', end); };
+                document.addEventListener('touchmove', mv, { passive: false }); document.addEventListener('touchend', end);
+            });
+        }
+
+        function setupRGBSliders() {
+            ['red', 'green', 'blue'].forEach((channel, index) => {
+                const slider = document.getElementById(channel + 'Slider');
+                const ch = ['r', 'g', 'b'][index];
+                const update = (e) => {
+                    const rect = slider.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    colorPicker.rgb[ch] = x * 255;
+                    colorPicker.hsl = rgbToHsl(colorPicker.rgb.r, colorPicker.rgb.g, colorPicker.rgb.b);
+                    updatePickerUI();
+                };
+                slider.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); update(e);
+                    const mv = (ev) => { ev.preventDefault(); update(ev); };
+                    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+                    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+                });
+                slider.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); update(e.touches[0]);
+                    const mv = (ev) => { ev.preventDefault(); update(ev.touches[0]); };
+                    const end = () => { document.removeEventListener('touchmove', mv); document.removeEventListener('touchend', end); };
+                    document.addEventListener('touchmove', mv, { passive: false }); document.addEventListener('touchend', end);
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
-
